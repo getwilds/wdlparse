@@ -1,7 +1,9 @@
 # wdlparse
 
-> [!WARNING]
-> BEWARE - This was written by Claude - with some edits by me.
+[![Test](https://github.com/getwilds/wdlparse/actions/workflows/test.yml/badge.svg)](https://github.com/getwilds/wdlparse/actions/workflows/test.yml)
+
+> [!NOTE]
+> This is an alpha version.
 
 A command-line tool for parsing WDL (Workflow Description Language) files.
 
@@ -9,6 +11,14 @@ A command-line tool for parsing WDL (Workflow Description Language) files.
 
 ```bash
 cargo install --path .
+```
+
+## Testing
+
+To run tests, execute the following command:
+
+```bash
+cargo t
 ```
 
 ## Usage
