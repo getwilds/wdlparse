@@ -9,7 +9,7 @@ mod info;
 #[command(name = "wdlparse")]
 #[command(about = "A command-line tool for parsing WDL (Workflow Description Language) files")]
 #[command(version)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     command: Commands,
 }
