@@ -1,7 +1,8 @@
-use crate::{
-    CallInfo, CallInputItem, ImportInfo, InputInfo, MetaItem, OutputFormat, OutputInfo,
-    RuntimeItem, StructInfo, TaskInfo, WdlInfo, WorkflowInfo,
+use crate::info::{
+    CallInfo, CallInputItem, ImportInfo, InputInfo, MetaItem, OutputInfo, RuntimeItem, StructInfo,
+    TaskInfo, WdlInfo, WorkflowInfo,
 };
+use crate::OutputFormat;
 use anyhow::{Context, Result};
 use colored::*;
 use std::fs;
