@@ -2,6 +2,7 @@ use crate::info::{
     CallInfo, CallInputItem, ImportInfo, InputInfo, MetaItem, OutputInfo, RuntimeItem, StructInfo,
     TaskInfo, WdlInfo, WorkflowInfo,
 };
+use crate::mermaid::{extract_workflow_graph, generate_mermaid};
 use crate::OutputFormat;
 use anyhow::{Context, Result};
 use colored::*;
@@ -111,6 +112,32 @@ pub fn info_command(file: PathBuf, format: OutputFormat) -> Result<()> {
                 println!();
                 println!("{}: {}", "Diagnostics".yellow().bold(), diagnostics.len());
             }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn mermaid_command(file: PathBuf, output: Option<PathBuf>) -> Result<()> {
+    let content = read_wdl_file(&file)?;
+
+    let graph = extract_workflow_graph(&content)
+        .map_err(|e| anyhow::anyhow!("Failed to extract workflow graph: {}", e))?;
+
+    let mermaid_diagram = generate_mermaid(&graph);
+
+    match output {
+        Some(output_path) => {
+            fs::write(&output_path, &mermaid_diagram)
+                .with_context(|| format!("Failed to write to file: {}", output_path.display()))?;
+            println!(
+                "{} Mermaid diagram written to: {}",
+                "Success:".green().bold(),
+                output_path.display()
+            );
+        }
+        None => {
+            println!("{}", mermaid_diagram);
         }
     }
 
