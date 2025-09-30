@@ -9,6 +9,8 @@ A command-line tool for parsing WDL (Workflow Description Language) files.
 
 ## Installation
 
+If you don't have Rust/cargo installed go to <https://rustup.rs/> to get them installed.
+
 ### From source
 
 ```bash
