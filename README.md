@@ -9,8 +9,20 @@ A command-line tool for parsing WDL (Workflow Description Language) files.
 
 ## Installation
 
+### From source
+
 ```bash
 cargo install --path .
+```
+
+### From releases
+
+Go to the release pages to get the latest version.
+
+<https://github.com/getwilds/wdlparse/releases>
+
+```bash
+cargo install --git https://github.com/getwilds/wdlparse --tag v0.0.5
 ```
 
 ## Testing
