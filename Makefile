@@ -1,5 +1,8 @@
-install:
-	pip install -e .
+install-crate:
+	cargo install --path . --bin wdlparse
+
+install-python:
+	uv run maturin develop --release
 
 lint-fix:
 	uv run ruff check --fix python/
@@ -25,5 +28,8 @@ py:
 test-setup:
 	uv sync --group dev
 
-test: test-setup
+test-python: test-setup
 	uv run python -m pytest
+
+test-rust:
+	cargo t

@@ -83,6 +83,9 @@ wdlparse parse examples/hello_world.wdl --format json
 
 # Verbose output with diagnostics
 wdlparse parse examples/hello_world.wdl --verbose
+
+# Extract basic metadata even from files with syntax errors
+wdlparse parse examples/malformed.wdl --extract-metadata --format json
 ```
 
 #### Get file information
@@ -93,13 +96,24 @@ wdlparse info examples/hello_world.wdl
 
 # JSON output
 wdlparse info examples/hello_world.wdl --format json
+
+# Extract robust metadata from problematic files
+wdlparse info examples/malformed.wdl --extract-metadata --format json
 ```
+
+### CLI Flags
+
+- `--format`: Output format (human, json, tree)
+- `--verbose`: Show detailed diagnostic information (parse command)
+- `--extract-metadata`: Extract basic metadata using robust fallback methods
 
 ### CLI Output Formats
 
 - **human**: User-friendly output with colors and formatting
 - **json**: Machine-readable JSON output
 - **tree**: Raw syntax tree output (parse command only)
+
+When `--extract-metadata` is used with JSON format, a `basic_metadata` field is added containing version, workflow name, and task names extracted using regex patterns that work even with syntax errors.
 
 ## Python Library
 
@@ -135,13 +149,13 @@ print(f"Diagnostics: {result['diagnostics_count']}")
 print(f"Has errors: {result['has_errors']}")
 print(result['output'])
 
-# Parse from file
-result = wdlparse.parse("path/to/file.wdl", output_format="json")
+# Parse from file with robust metadata extraction
+result = wdlparse.parse("path/to/file.wdl", output_format="json", extract_metadata=True)
 print(f"File: {result.file_path}")
 print(result.output)
 
-# Get file information
-info = wdlparse.info("path/to/file.wdl", output_format="human")
+# Get file information with robust metadata
+info = wdlparse.info("path/to/file.wdl", output_format="json", extract_metadata=True)
 print(info)
 
 # Using the high-level API
@@ -153,9 +167,9 @@ result = parser.parse_string(wdl_content)
 
 #### Functions
 
-- `parse_text(content, output_format="human", verbose=False)` - Parse WDL from string
-- `parse(file_path, output_format="human", verbose=False)` - Parse WDL from file
-- `info(file_path, output_format="human")` - Get WDL file information
+- `parse_text(content, output_format="human", verbose=False, extract_metadata=False)` - Parse WDL from string
+- `parse(file_path, output_format="human", verbose=False, extract_metadata=False)` - Parse WDL from file  
+- `info(file_path, output_format="human", extract_metadata=False)` - Get WDL file information
 
 #### Classes
 

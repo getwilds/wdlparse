@@ -12,6 +12,7 @@ BUILD.md
 DUAL_INTERFACE_GUIDE.md
 PYTHON_BINDINGS_SUMMARY.md
 build.py
+EXTRACT_METADATA.md
 
 # Virtual environments
 .venv

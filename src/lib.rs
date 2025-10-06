@@ -11,6 +11,7 @@ use wdl_grammar::SyntaxTree;
 
 pub mod commands;
 pub mod info;
+pub mod metadata;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
@@ -57,6 +58,18 @@ pub struct ParseResult {
 }
 
 #[cfg(feature = "python")]
+#[derive(Clone, Debug)]
+#[pyclass]
+pub struct BasicMetadata {
+    #[pyo3(get)]
+    pub version: Option<String>,
+    #[pyo3(get)]
+    pub workflow_name: Option<String>,
+    #[pyo3(get)]
+    pub task_names: Vec<String>,
+}
+
+#[cfg(feature = "python")]
 #[pymethods]
 impl ParseResult {
     fn __repr__(&self) -> String {
@@ -70,6 +83,17 @@ impl ParseResult {
     }
 }
 
+#[cfg(feature = "python")]
+#[pymethods]
+impl BasicMetadata {
+    fn __repr__(&self) -> String {
+        format!(
+            "BasicMetadata(version={:?}, workflow_name={:?}, task_names={:?})",
+            self.version, self.workflow_name, self.task_names
+        )
+    }
+}
+
 /// Parse a WDL file and return structured results
 #[cfg(feature = "python")]
 #[pyfunction]
@@ -77,9 +101,11 @@ fn parse_wdl(
     file_path: String,
     format: Option<PyOutputFormat>,
     verbose: Option<bool>,
+    extract_metadata: Option<bool>,
 ) -> PyResult<ParseResult> {
     let format = format.unwrap_or(PyOutputFormat::Human);
     let verbose = verbose.unwrap_or(false);
+    let extract_metadata = extract_metadata.unwrap_or(false);
     let path = PathBuf::from(&file_path);
 
     // Read the file content
@@ -95,6 +121,13 @@ fn parse_wdl(
     let has_errors = diagnostics
         .iter()
         .any(|d| matches!(d.severity(), wdl_grammar::Severity::Error));
+
+    // Extract basic metadata if requested
+    let basic_metadata = if extract_metadata {
+        Some(metadata::BasicWdlMetadata::extract_from_text(&content))
+    } else {
+        None
+    };
 
     // Generate output based on format
     let output = match format {
@@ -117,12 +150,22 @@ fn parse_wdl(
         }
         PyOutputFormat::Json => {
             let semantic_info = commands::extract_semantic_info(&tree.root());
-            let json_output = serde_json::json!({
+            let mut json_output = serde_json::json!({
                 "file": file_path,
                 "diagnostics": diagnostics.len(),
                 "has_errors": has_errors,
                 "wdl": semantic_info
             });
+
+            if let Some(metadata) = &basic_metadata {
+                json_output["basic_metadata"] = serde_json::to_value(metadata).map_err(|e| {
+                    PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "Failed to serialize basic metadata: {}",
+                        e
+                    ))
+                })?;
+            }
+
             serde_json::to_string_pretty(&json_output).map_err(|e| {
                 PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                     "Failed to serialize to JSON: {}",
@@ -163,8 +206,13 @@ fn parse_wdl(
 /// Get information about a WDL file (version, tasks, workflows, etc.)
 #[cfg(feature = "python")]
 #[pyfunction]
-fn info_wdl(file_path: String, format: Option<PyOutputFormat>) -> PyResult<String> {
+fn info_wdl(
+    file_path: String,
+    format: Option<PyOutputFormat>,
+    extract_metadata: Option<bool>,
+) -> PyResult<String> {
     let format = format.unwrap_or(PyOutputFormat::Human);
+    let extract_metadata = extract_metadata.unwrap_or(false);
     let path = PathBuf::from(&file_path);
 
     let content = std::fs::read_to_string(&path).map_err(|e| {
@@ -177,12 +225,29 @@ fn info_wdl(file_path: String, format: Option<PyOutputFormat>) -> PyResult<Strin
     let (tree, _) = SyntaxTree::parse(&content);
     let semantic_info = commands::extract_semantic_info(&tree.root());
 
+    // Extract basic metadata if requested
+    let basic_metadata = if extract_metadata {
+        Some(metadata::BasicWdlMetadata::extract_from_text(&content))
+    } else {
+        None
+    };
+
     let result = match format {
         PyOutputFormat::Json => {
-            let json_output = serde_json::json!({
+            let mut json_output = serde_json::json!({
                 "file": file_path,
                 "wdl": semantic_info
             });
+
+            if let Some(metadata) = &basic_metadata {
+                json_output["basic_metadata"] = serde_json::to_value(metadata).map_err(|e| {
+                    PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "Failed to serialize basic metadata: {}",
+                        e
+                    ))
+                })?;
+            }
+
             serde_json::to_string_pretty(&json_output).map_err(|e| {
                 PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                     "Failed to serialize to JSON: {}",
@@ -224,9 +289,11 @@ fn parse_wdl_string(
     content: String,
     format: Option<PyOutputFormat>,
     verbose: Option<bool>,
+    extract_metadata: Option<bool>,
 ) -> PyResult<Py<PyDict>> {
     let format = format.unwrap_or(PyOutputFormat::Human);
     let verbose = verbose.unwrap_or(false);
+    let extract_metadata = extract_metadata.unwrap_or(false);
 
     // Parse the WDL content
     let (tree, diagnostics) = SyntaxTree::parse(&content);
@@ -238,6 +305,19 @@ fn parse_wdl_string(
 
     dict.set_item("diagnostics_count", diagnostics.len())?;
     dict.set_item("has_errors", has_errors)?;
+
+    // Extract basic metadata if requested
+    if extract_metadata {
+        let basic_metadata = metadata::BasicWdlMetadata::extract_from_text(&content);
+        dict.set_item(
+            "basic_metadata",
+            (
+                basic_metadata.version,
+                basic_metadata.workflow_name,
+                basic_metadata.task_names,
+            ),
+        )?;
+    }
 
     // Add diagnostic details if verbose
     if verbose {
@@ -255,11 +335,23 @@ fn parse_wdl_string(
         }
         PyOutputFormat::Json => {
             let semantic_info = commands::extract_semantic_info(&tree.root());
-            let json_output = serde_json::json!({
+            let mut json_output = serde_json::json!({
                 "diagnostics": diagnostics.len(),
                 "has_errors": has_errors,
                 "wdl": semantic_info
             });
+
+            if extract_metadata {
+                let basic_metadata = metadata::BasicWdlMetadata::extract_from_text(&content);
+                json_output["basic_metadata"] =
+                    serde_json::to_value(basic_metadata).map_err(|e| {
+                        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                            "Failed to serialize basic metadata: {}",
+                            e
+                        ))
+                    })?;
+            }
+
             serde_json::to_string_pretty(&json_output).map_err(|e| {
                 PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                     "Failed to serialize to JSON: {}",
@@ -298,6 +390,7 @@ fn parse_wdl_string(
 fn wdlparse(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyOutputFormat>()?;
     m.add_class::<ParseResult>()?;
+    m.add_class::<BasicMetadata>()?;
     m.add_function(wrap_pyfunction!(parse_wdl, m)?)?;
     m.add_function(wrap_pyfunction!(info_wdl, m)?)?;
     m.add_function(wrap_pyfunction!(parse_wdl_string, m)?)?;

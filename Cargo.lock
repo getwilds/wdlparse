@@ -1130,6 +1130,7 @@ dependencies = [
  "colored",
  "predicates",
  "pyo3",
+ "regex",
  "serde",
  "serde_json",
  "tempfile",
