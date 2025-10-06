@@ -23,7 +23,7 @@ except ImportError as e:
         f"Original error: {e}"
     ) from e
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Scott Chamberlain"
 __email__ = "sachamber@fredhutch.org"
 
