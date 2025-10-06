@@ -5,3 +5,10 @@ target/
 **/Cargo.lock
 
 **/docs/
+
+# python
+__pycache__
+BUILD.md
+DUAL_INTERFACE_GUIDE.md
+PYTHON_BINDINGS_SUMMARY.md
+build.py
