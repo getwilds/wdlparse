@@ -12,3 +12,6 @@ BUILD.md
 DUAL_INTERFACE_GUIDE.md
 PYTHON_BINDINGS_SUMMARY.md
 build.py
+
+# Virtual environments
+.venv
