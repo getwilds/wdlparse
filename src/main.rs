@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use wdlparse::OutputFormat;
 
 mod commands;
 mod info;
@@ -40,16 +41,6 @@ enum Commands {
         #[arg(short, long, value_enum, default_value = "human")]
         format: OutputFormat,
     },
-}
-
-#[derive(clap::ValueEnum, Clone, Debug)]
-pub enum OutputFormat {
-    /// Human-readable format
-    Human,
-    /// JSON format
-    Json,
-    /// Syntax tree format
-    Tree,
 }
 
 fn main() -> Result<()> {

@@ -135,7 +135,7 @@ fn read_wdl_file(path: &PathBuf) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("Failed to read file: {}", path.display()))
 }
 
-fn extract_semantic_info(node: &wdl_grammar::SyntaxNode) -> WdlInfo {
+pub fn extract_semantic_info(node: &wdl_grammar::SyntaxNode) -> WdlInfo {
     let mut info = WdlInfo::new();
     collect_semantic_info(node, &mut info);
     info
