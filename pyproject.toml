@@ -63,6 +63,6 @@ disallow_untyped_defs = true
 
 [dependency-groups]
 dev = [
-    "maturin>=1.9.4",
+    "maturin>=1.9.6",
     "pytest>=8.4.2",
 ]
