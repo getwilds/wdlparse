@@ -14,6 +14,9 @@ pub mod info;
 pub mod mermaid;
 pub mod metadata;
 
+#[cfg(feature = "python")]
+use crate::mermaid::{extract_workflow_graph, generate_mermaid};
+
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
     /// Human-readable format
@@ -385,6 +388,45 @@ fn parse_wdl_string(
     Ok(dict.unbind())
 }
 
+/// Generate a Mermaid diagram from a WDL file
+#[cfg(feature = "python")]
+#[pyfunction]
+fn mermaid_wdl(file_path: String) -> PyResult<String> {
+    let path = PathBuf::from(&file_path);
+
+    let content = std::fs::read_to_string(&path).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!(
+            "Failed to read file '{}': {}",
+            file_path, e
+        ))
+    })?;
+
+    let graph = extract_workflow_graph(&content).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Failed to extract workflow graph: {}",
+            e
+        ))
+    })?;
+
+    let mermaid_diagram = generate_mermaid(&graph);
+    Ok(mermaid_diagram)
+}
+
+/// Generate a Mermaid diagram from WDL content string
+#[cfg(feature = "python")]
+#[pyfunction]
+fn mermaid_wdl_string(content: String) -> PyResult<String> {
+    let graph = extract_workflow_graph(&content).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Failed to extract workflow graph: {}",
+            e
+        ))
+    })?;
+
+    let mermaid_diagram = generate_mermaid(&graph);
+    Ok(mermaid_diagram)
+}
+
 /// A Python module implemented in Rust.
 #[cfg(feature = "python")]
 #[pymodule]
@@ -395,5 +437,7 @@ fn wdlparse(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_wdl, m)?)?;
     m.add_function(wrap_pyfunction!(info_wdl, m)?)?;
     m.add_function(wrap_pyfunction!(parse_wdl_string, m)?)?;
+    m.add_function(wrap_pyfunction!(mermaid_wdl, m)?)?;
+    m.add_function(wrap_pyfunction!(mermaid_wdl_string, m)?)?;
     Ok(())
 }

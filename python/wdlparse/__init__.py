@@ -13,6 +13,8 @@ try:
         ParseResult,
         PyOutputFormat,
         info_wdl,
+        mermaid_wdl,
+        mermaid_wdl_string,
         parse_wdl,
         parse_wdl_string,
     )
@@ -129,6 +131,37 @@ class WDLParser:
 
         return format_map[format_str.lower()]
 
+    def mermaid(self, file_path: str | Path) -> str:
+        """
+        Generate a Mermaid diagram from a WDL file.
+
+        Args:
+            file_path: Path to the WDL file to generate diagram from
+
+        Returns:
+            String containing Mermaid diagram markup
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist
+        """
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"WDL file not found: {file_path}")
+
+        return mermaid_wdl(str(file_path))
+
+    def mermaid_string(self, wdl_content: str) -> str:
+        """
+        Generate a Mermaid diagram from WDL content string.
+
+        Args:
+            wdl_content: WDL source code as a string
+
+        Returns:
+            String containing Mermaid diagram markup
+        """
+        return mermaid_wdl_string(wdl_content)
+
 
 # Convenience functions for direct use
 def parse(
@@ -169,6 +202,34 @@ def parse_text(
     return parser.parse_string(wdl_content, output_format, extract_metadata)
 
 
+def mermaid(file_path: str | Path) -> str:
+    """
+    Generate a Mermaid diagram from a WDL file (convenience function).
+
+    Args:
+        file_path: Path to the WDL file to generate diagram from
+
+    Returns:
+        String containing Mermaid diagram markup
+    """
+    parser = WDLParser()
+    return parser.mermaid(file_path)
+
+
+def mermaid_text(wdl_content: str) -> str:
+    """
+    Generate a Mermaid diagram from WDL content string (convenience function).
+
+    Args:
+        wdl_content: WDL source code as a string
+
+    Returns:
+        String containing Mermaid diagram markup
+    """
+    parser = WDLParser()
+    return parser.mermaid_string(wdl_content)
+
+
 def info(file_path: str | Path, output_format: str = "human", extract_metadata: bool = False) -> str:
     """
     Get information about a WDL file (convenience function).
@@ -196,8 +257,12 @@ __all__ = [
     "parse",
     "parse_text",
     "info",
+    "mermaid",
+    "mermaid_text",
     "parse_wdl",
     "info_wdl",
     "parse_wdl_string",
+    "mermaid_wdl",
+    "mermaid_wdl_string",
     "PyOutputFormat",
 ]

@@ -533,6 +533,182 @@ workflow simple_workflow {
         assert basic_metadata[2] == ["broken_task"]  # task_names
 
 
+class TestMermaidDiagrams:
+    """Test cases for Mermaid diagram generation."""
+
+    @pytest.fixture
+    def workflow_wdl(self):
+        """Sample WDL with workflow for mermaid testing."""
+        return """
+version 1.1
+
+task say_hello {
+    input {
+        String name
+    }
+    command {
+        echo "Hello ${name}"
+    }
+    output {
+        String greeting = stdout()
+    }
+}
+
+task process_greeting {
+    input {
+        String message
+    }
+    command {
+        echo "Processing: ${message}"
+    }
+    output {
+        String processed = stdout()
+    }
+}
+
+workflow hello_world {
+    input {
+        String input_name
+    }
+
+    call say_hello {
+        input: name = input_name
+    }
+
+    call process_greeting {
+        input: message = say_hello.greeting
+    }
+
+    output {
+        String result = process_greeting.processed
+    }
+}
+"""
+
+    def test_mermaid_text(self, workflow_wdl):
+        """Test generating Mermaid diagram from WDL text."""
+        mermaid_output = wdlparse.mermaid_text(workflow_wdl)
+
+        assert isinstance(mermaid_output, str)
+        assert "flowchart TD" in mermaid_output
+        assert "workflow_hello_world" in mermaid_output
+        assert "call_say_hello" in mermaid_output
+        assert "call_process_greeting" in mermaid_output
+        assert "classDef" in mermaid_output  # Check for styling
+
+    def test_mermaid_file(self, workflow_wdl):
+        """Test generating Mermaid diagram from WDL file."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".wdl", delete=False) as f:
+            f.write(workflow_wdl)
+            temp_path = f.name
+
+        try:
+            mermaid_output = wdlparse.mermaid(temp_path)
+
+            assert isinstance(mermaid_output, str)
+            assert "flowchart TD" in mermaid_output
+            assert "workflow_hello_world" in mermaid_output
+            assert "call_say_hello" in mermaid_output
+            assert "call_process_greeting" in mermaid_output
+        finally:
+            os.unlink(temp_path)
+
+    def test_mermaid_parser_class(self, workflow_wdl):
+        """Test mermaid methods on WDLParser class."""
+        parser = wdlparse.WDLParser()
+
+        # Test mermaid_string method
+        mermaid_output = parser.mermaid_string(workflow_wdl)
+        assert isinstance(mermaid_output, str)
+        assert "flowchart TD" in mermaid_output
+
+        # Test mermaid method with file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".wdl", delete=False) as f:
+            f.write(workflow_wdl)
+            temp_path = f.name
+
+        try:
+            mermaid_output = parser.mermaid(temp_path)
+            assert isinstance(mermaid_output, str)
+            assert "flowchart TD" in mermaid_output
+        finally:
+            os.unlink(temp_path)
+
+    def test_mermaid_nonexistent_file(self):
+        """Test mermaid with nonexistent file."""
+        with pytest.raises(FileNotFoundError):
+            wdlparse.mermaid("/nonexistent/file.wdl")
+
+        parser = wdlparse.WDLParser()
+        with pytest.raises(FileNotFoundError):
+            parser.mermaid("/nonexistent/file.wdl")
+
+    def test_mermaid_path_object_support(self, workflow_wdl):
+        """Test that mermaid functions accept Path objects."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".wdl", delete=False) as f:
+            f.write(workflow_wdl)
+            temp_path = Path(f.name)
+
+        try:
+            # Test convenience function with Path object
+            mermaid_output = wdlparse.mermaid(temp_path)
+            assert isinstance(mermaid_output, str)
+            assert "flowchart TD" in mermaid_output
+
+            # Test WDLParser class with Path object
+            parser = wdlparse.WDLParser()
+            mermaid_output = parser.mermaid(temp_path)
+            assert isinstance(mermaid_output, str)
+            assert "flowchart TD" in mermaid_output
+        finally:
+            os.unlink(temp_path)
+
+    def test_mermaid_complex_workflow(self):
+        """Test mermaid with conditional and scatter statements."""
+        complex_wdl = """
+version 1.1
+
+task process_item {
+    input {
+        String item
+    }
+    command {
+        echo "Processing ${item}"
+    }
+    output {
+        String result = stdout()
+    }
+}
+
+workflow complex_workflow {
+    input {
+        Array[String] items
+        Boolean process_all
+    }
+
+    if (process_all) {
+        scatter (item in items) {
+            call process_item {
+                input: item = item
+            }
+        }
+    }
+
+    output {
+        Array[String]? results = process_item.result
+    }
+}
+"""
+        mermaid_output = wdlparse.mermaid_text(complex_wdl)
+
+        assert isinstance(mermaid_output, str)
+        assert "flowchart TD" in mermaid_output
+        assert "workflow_complex_workflow" in mermaid_output
+        assert "conditional_" in mermaid_output or "if condition" in mermaid_output
+        assert "scatter_" in mermaid_output or "scatter" in mermaid_output
+        assert "call_process_item" in mermaid_output
+
+
 if __name__ == "__main__":
     # Allow running tests directly
     pytest.main([__file__, "-v"])
