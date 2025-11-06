@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct WdlInfo {
     pub version: Option<String>,
     pub tasks: Vec<TaskInfo>,
@@ -9,7 +9,7 @@ pub struct WdlInfo {
     pub imports: Vec<ImportInfo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TaskInfo {
     pub name: String,
     pub inputs: Vec<InputInfo>,
@@ -20,7 +20,7 @@ pub struct TaskInfo {
     pub parameter_meta: Vec<MetaItem>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WorkflowInfo {
     pub name: String,
     pub inputs: Vec<InputInfo>,
@@ -30,19 +30,19 @@ pub struct WorkflowInfo {
     pub parameter_meta: Vec<MetaItem>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct StructInfo {
     pub name: String,
     pub fields: Vec<InputInfo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ImportInfo {
     pub uri: String,
     pub alias: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InputInfo {
     pub name: String,
     pub wdl_type: String,
@@ -50,14 +50,14 @@ pub struct InputInfo {
     pub default_value: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OutputInfo {
     pub name: String,
     pub wdl_type: String,
     pub expression: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CallInfo {
     pub name: String,
     pub target: String,
@@ -65,19 +65,19 @@ pub struct CallInfo {
     pub inputs: Vec<CallInputItem>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CallInputItem {
     pub name: String,
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct RuntimeItem {
     pub key: String,
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MetaItem {
     pub key: String,
     pub value: String,

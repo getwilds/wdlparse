@@ -1,9 +1,11 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use wdlparse::OutputFormat;
 
 mod commands;
 mod info;
+pub mod metadata;
 
 #[derive(Parser)]
 #[command(name = "wdlparse")]
@@ -29,6 +31,10 @@ enum Commands {
         /// Show detailed diagnostic information
         #[arg(short, long)]
         verbose: bool,
+
+        /// Extract basic metadata using robust fallback methods
+        #[arg(long)]
+        extract_metadata: bool,
     },
     /// Show information about a WDL file (version, tasks, workflows, etc.)
     Info {
@@ -39,17 +45,11 @@ enum Commands {
         /// Output format
         #[arg(short, long, value_enum, default_value = "human")]
         format: OutputFormat,
-    },
-}
 
-#[derive(clap::ValueEnum, Clone, Debug)]
-pub enum OutputFormat {
-    /// Human-readable format
-    Human,
-    /// JSON format
-    Json,
-    /// Syntax tree format
-    Tree,
+        /// Extract basic metadata using robust fallback methods
+        #[arg(long)]
+        extract_metadata: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -60,7 +60,12 @@ fn main() -> Result<()> {
             file,
             format,
             verbose,
-        } => commands::parse_command(file, format, verbose),
-        Commands::Info { file, format } => commands::info_command(file, format),
+            extract_metadata,
+        } => commands::parse_command(file, format, verbose, extract_metadata),
+        Commands::Info {
+            file,
+            format,
+            extract_metadata,
+        } => commands::info_command(file, format, extract_metadata),
     }
 }
