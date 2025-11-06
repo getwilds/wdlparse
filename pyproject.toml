@@ -1,0 +1,68 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "wdlparse"
+description = "A Python interface to the wdlparse Rust library for parsing WDL (Workflow Description Language) files"
+authors = [
+    {name = "Scott Chamberlain", email = "sachamber@fredhutch.org"},
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["wdl", "workflow", "bioinformatics", "parsing", "cromwell"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/getwilds/wdlparse"
+Repository = "https://github.com/getwilds/wdlparse"
+Issues = "https://github.com/getwilds/wdlparse/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-benchmark",
+    "black",
+    "ruff",
+    "mypy",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "wdlparse"
+features = ["python"]
+
+[tool.lint]
+line-length = 88
+target-version = "py314"
+select = ["E", "F", "W", "I", "N", "UP", "YTT", "BLE", "B", "A", "C4", "T20"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "maturin>=1.9.6",
+    "pytest>=8.4.2",
+]

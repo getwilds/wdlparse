@@ -3,6 +3,7 @@ use crate::info::{
     TaskInfo, WdlInfo, WorkflowInfo,
 };
 use crate::mermaid::{extract_workflow_graph, generate_mermaid};
+use crate::metadata::BasicWdlMetadata;
 use crate::OutputFormat;
 use anyhow::{Context, Result};
 use colored::*;
@@ -10,9 +11,21 @@ use std::fs;
 use std::path::PathBuf;
 use wdl_grammar::{SyntaxKind, SyntaxTree};
 
-pub fn parse_command(file: PathBuf, format: OutputFormat, verbose: bool) -> Result<()> {
+pub fn parse_command(
+    file: PathBuf,
+    format: OutputFormat,
+    verbose: bool,
+    extract_metadata: bool,
+) -> Result<()> {
     let content = read_wdl_file(&file)?;
     let (tree, diagnostics) = SyntaxTree::parse(&content);
+
+    // Extract basic metadata if requested
+    let basic_metadata = if extract_metadata {
+        Some(BasicWdlMetadata::extract_from_text(&content))
+    } else {
+        None
+    };
 
     if verbose && !diagnostics.is_empty() {
         println!("{}", "Diagnostics:".yellow().bold());
@@ -33,12 +46,17 @@ pub fn parse_command(file: PathBuf, format: OutputFormat, verbose: bool) -> Resu
         }
         OutputFormat::Json => {
             let semantic_info = extract_semantic_info(&tree.root());
-            let json_output = serde_json::json!({
+            let mut json_output = serde_json::json!({
                 "file": file.display().to_string(),
                 "diagnostics": diagnostics.len(),
                 "has_errors": diagnostics.iter().any(|d| matches!(d.severity(), wdl_grammar::Severity::Error)),
                 "wdl": semantic_info
             });
+
+            if let Some(metadata) = &basic_metadata {
+                json_output["basic_metadata"] = serde_json::to_value(metadata)?;
+            }
+
             println!("{}", serde_json::to_string_pretty(&json_output)?);
         }
         OutputFormat::Human => {
@@ -55,24 +73,35 @@ pub fn parse_command(file: PathBuf, format: OutputFormat, verbose: bool) -> Resu
     Ok(())
 }
 
-pub fn info_command(file: PathBuf, format: OutputFormat) -> Result<()> {
+pub fn info_command(file: PathBuf, format: OutputFormat, extract_metadata: bool) -> Result<()> {
     let content = read_wdl_file(&file)?;
     let (tree, diagnostics) = SyntaxTree::parse(&content);
 
     let mut info = WdlInfo::new();
     collect_semantic_info(&tree.root(), &mut info);
 
+    // Extract basic metadata if requested
+    let basic_metadata = if extract_metadata {
+        Some(BasicWdlMetadata::extract_from_text(&content))
+    } else {
+        None
+    };
+
     match format {
         OutputFormat::Json => {
-            let json_output = serde_json::json!({
+            let mut json_output = serde_json::json!({
                 "file": file.display().to_string(),
                 "version": info.version,
                 "tasks": info.tasks,
                 "workflows": info.workflows,
                 "structs": info.structs,
-                "imports": info.imports,
-                "diagnostics_count": diagnostics.len()
+                "imports": info.imports
             });
+
+            if let Some(metadata) = &basic_metadata {
+                json_output["basic_metadata"] = serde_json::to_value(metadata)?;
+            }
+
             println!("{}", serde_json::to_string_pretty(&json_output)?);
         }
         _ => {
@@ -162,7 +191,7 @@ fn read_wdl_file(path: &PathBuf) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("Failed to read file: {}", path.display()))
 }
 
-fn extract_semantic_info(node: &wdl_grammar::SyntaxNode) -> WdlInfo {
+pub fn extract_semantic_info(node: &wdl_grammar::SyntaxNode) -> WdlInfo {
     let mut info = WdlInfo::new();
     collect_semantic_info(node, &mut info);
     info
