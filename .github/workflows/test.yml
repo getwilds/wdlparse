@@ -11,10 +11,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
+  rust_build_and_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: rustup update stable && rustup default stable
       - run: cargo build --verbose
       - run: cargo test --verbose
+
+  python_build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.7"
+          python-version: "3.13"
+      - name: Run tests
+        run: make test-python
